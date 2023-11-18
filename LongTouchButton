@@ -1,0 +1,64 @@
+
+import SwiftUI
+
+struct LongTouchButton<Content: View>: View {
+  
+  @State private var isLongTouch = false
+  private let action: () -> ()
+  private let longAction: () -> ()
+  private let label: Content
+  
+  init(
+    _ action: @escaping () -> Void,
+    longAction: @escaping () -> Void,
+    @ViewBuilder label: () -> Content
+  ) {
+    self.action = action
+    self.longAction = longAction
+    self.label = label()
+  }
+  
+  var body: some View {
+    Button {
+      guard !isLongTouch else {
+        isLongTouch = false
+        return
+      }
+      action()
+    } label: {
+      label
+    }
+    .buttonStyle(
+      LongTouchButtonStyle {
+        isLongTouch = true
+        longAction()
+      }
+    )
+  }
+  
+}
+
+struct LongTouchButtonStyle: ButtonStyle {
+  
+  @State private var timer: Timer?
+  private let longAction: () -> ()
+  
+  init(_ longAction: @escaping () -> Void) {
+    self.longAction = longAction
+  }
+  
+  func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .opacity(configuration.isPressed ? 0.7 : 1)
+      .onChange(of: configuration.isPressed) { ispressed in
+        if ispressed {
+          timer = Timer.scheduledTimer(withTimeInterval: 0.6, repeats: false, block: { _ in
+            longAction()
+          })
+        } else {
+          timer?.invalidate()
+        }
+      }
+  }
+  
+}
